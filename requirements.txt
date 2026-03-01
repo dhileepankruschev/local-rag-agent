@@ -2,8 +2,8 @@ langchain
 langchain-classic
 langchain-community
 langchain-text-splitters
-chromadb
-ollama
+langchain-chroma
+langchain-ollama
 pypdf
 sentence-transformers
 gradio
