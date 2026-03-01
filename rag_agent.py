@@ -1,4 +1,9 @@
 import os
+
+# Disable telemetry to prevent errors when running completely offline
+os.environ["ANONYMIZED_TELEMETRY"] = "False"
+os.environ["GRADIO_ANALYTICS_ENABLED"] = "False"
+
 import gradio as gr
 from langchain_community.document_loaders import PyPDFLoader, TextLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -29,6 +34,8 @@ def load_documents():
         docs.extend(loader.load())
     return docs
 
+from chromadb.config import Settings
+
 def build_index():
     print("📚 Reading your documents...")
     docs = load_documents()
@@ -39,7 +46,8 @@ def build_index():
     print(f"✅ Split into {len(chunks)} searchable chunks")
 
     if not chunks:
-        print("⚠️  No documents found! Please add .pdf or .txt files to the './my_documents' folder.")
+        print("⚠️  No text found! Please add text-based .pdf or .txt files to the './my_documents' folder.")
+        print("   (Note: Scanned images without selectable text won't work!)")
         return None
 
     # Convert text chunks to numbers (embeddings) for semantic search
@@ -47,13 +55,22 @@ def build_index():
     embeddings = OllamaEmbeddings(model="nomic-embed-text")
     
     # Store in local ChromaDB
-    db = Chroma.from_documents(chunks, embeddings, persist_directory=DB_FOLDER)
+    db = Chroma.from_documents(
+        chunks, 
+        embeddings, 
+        persist_directory=DB_FOLDER,
+        client_settings=Settings(anonymized_telemetry=False)
+    )
     print("✅ Index built and saved!")
     return db
 
 def get_qa_chain():
     embeddings = OllamaEmbeddings(model="nomic-embed-text")
-    db = Chroma(persist_directory=DB_FOLDER, embedding_function=embeddings)
+    db = Chroma(
+        persist_directory=DB_FOLDER, 
+        embedding_function=embeddings,
+        client_settings=Settings(anonymized_telemetry=False)
+    )
     retriever = db.as_retriever(search_kwargs={"k": 3})  # Grab top 3 relevant chunks
     llm = OllamaLLM(model=MODEL_NAME)
     return RetrievalQA.from_chain_type(llm=llm, retriever=retriever, return_source_documents=True)
