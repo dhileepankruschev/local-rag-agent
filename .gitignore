@@ -1,0 +1,16 @@
+# Environments
+venv/
+env/
+.env
+
+# IDEs
+.vscode/
+.idea/
+
+# Python
+__pycache__/
+*.pyc
+
+# App Data
+my_documents/
+vector_db/
